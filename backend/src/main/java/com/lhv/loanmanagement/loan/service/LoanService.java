@@ -4,17 +4,17 @@ import com.lhv.loanmanagement.loan.Loan;
 import com.lhv.loanmanagement.loan.LoanRepository;
 import com.lhv.loanmanagement.loan.dto.CreateLoanRequest;
 import com.lhv.loanmanagement.loan.exception.LoanNotFoundException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 
 import java.util.UUID;
 
+@Slf4j
 @Service
 public class LoanService {
 
-    private static final Logger log = LoggerFactory.getLogger(LoanService.class);
     private final LoanRepository loanRepository;
 
     public LoanService(LoanRepository loanRepository) {
@@ -23,6 +23,8 @@ public class LoanService {
 
     @Transactional
     public Loan create(CreateLoanRequest request) {
+        Assert.notNull(request, "CreateLoanRequest cannot be null");
+        
         log.debug("Creating new loan: type={}, amount={}, periodMonths={}, interestRate={}, scheduleType={}, startDate={}",
                 request.getLoanType(), request.getAmount(), request.getPeriodMonths(),
                 request.getAnnualInterestRate(), request.getScheduleType(), request.getStartDate());
@@ -41,7 +43,10 @@ public class LoanService {
         return saved;
     }
 
+    @Transactional(readOnly = true)
     public Loan findById(UUID id) {
+        Assert.notNull(id, "Loan ID cannot be null");
+        
         log.debug("Finding loan by id={}", id);
         return loanRepository.findById(id)
                 .orElseThrow(() -> {
