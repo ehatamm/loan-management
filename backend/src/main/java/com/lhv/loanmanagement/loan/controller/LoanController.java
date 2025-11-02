@@ -12,7 +12,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -25,6 +27,18 @@ public class LoanController {
     public LoanController(LoanService loanService, RepaymentScheduleService repaymentScheduleService) {
         this.loanService = loanService;
         this.repaymentScheduleService = repaymentScheduleService;
+    }
+
+    @GetMapping
+    public ResponseEntity<List<LoanResponse>> getAllLoans() {
+        log.debug("Received request to get all loans");
+        
+        List<Loan> loans = loanService.findAll();
+        List<LoanResponse> responses = loans.stream()
+                .map(LoanResponse::from)
+                .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(responses);
     }
 
     @PostMapping

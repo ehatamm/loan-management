@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -43,6 +44,14 @@ public class LoanService {
                     log.warn("Loan not found with id={}", id);
                     return new LoanNotFoundException("Loan not found with id: " + id);
                 });
+    }
+
+    @Transactional(readOnly = true)
+    public List<Loan> findAll() {
+        log.debug("Finding all loans");
+        List<Loan> loans = loanRepository.findAll();
+        log.info("Found {} loans", loans.size());
+        return loans;
     }
 }
 
