@@ -2,9 +2,8 @@ import { useState, FormEvent } from 'react';
 import {
   Box,
   Button,
-  Paper,
-  Typography,
   Alert,
+  DialogContent,
 } from '@mui/material';
 import { createLoan } from '../../api/client';
 import type { CreateLoanRequest } from '../../types';
@@ -61,11 +60,7 @@ export function LoanForm({ onSuccess }: LoanFormProps) {
   };
 
   return (
-    <Paper sx={{ p: 3, mt: 2 }}>
-      <Typography variant="h5" component="h2" gutterBottom>
-        Create New Loan
-      </Typography>
-
+    <DialogContent dividers sx={{ pt: 3, px: 3 }}>
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
@@ -134,6 +129,6 @@ export function LoanForm({ onSuccess }: LoanFormProps) {
           {loading ? 'Creating...' : 'Create Loan'}
         </Button>
       </Box>
-    </Paper>
+    </DialogContent>
   );
 }
