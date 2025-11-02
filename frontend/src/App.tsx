@@ -1,12 +1,17 @@
 import { useState } from 'react'
 import { CssBaseline, Container, Typography } from '@mui/material'
 import { LoanForm } from './features/loan/LoanForm'
+import { LoansList } from './features/loan/LoansList'
 import { ScheduleDisplay } from './features/loan/ScheduleDisplay'
 
 function App() {
   const [selectedLoanId, setSelectedLoanId] = useState<string | null>(null);
 
   const handleLoanCreated = (loanId: string) => {
+    setSelectedLoanId(loanId);
+  };
+
+  const handleLoanSelect = (loanId: string) => {
     setSelectedLoanId(loanId);
   };
 
@@ -18,6 +23,7 @@ function App() {
           Loan Management
         </Typography>
         <LoanForm onSuccess={handleLoanCreated} />
+        <LoansList onLoanSelect={handleLoanSelect} />
         {selectedLoanId && <ScheduleDisplay loanId={selectedLoanId} />}
       </Container>
     </>

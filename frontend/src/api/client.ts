@@ -39,3 +39,9 @@ export async function getSchedule(id: string): Promise<ScheduleResponse> {
   return handleResponse<ScheduleResponse>(response);
 }
 
+export async function getAllLoans(): Promise<Loan[]> {
+  const response = await fetch(`${API_BASE_URL}/loans`);
+
+  return handleResponse<Loan[]>(response);
+}
+
