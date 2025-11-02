@@ -2,3 +2,7 @@
 .cursorrules
 TASKS.md
 LOCAL_DEVELOPMENT.md
+
+# IDE
+.vscode/
+.idea/
