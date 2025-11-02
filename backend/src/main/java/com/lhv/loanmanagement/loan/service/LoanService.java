@@ -1,0 +1,58 @@
+package com.lhv.loanmanagement.loan.service;
+
+import com.lhv.loanmanagement.loan.Loan;
+import com.lhv.loanmanagement.loan.LoanRepository;
+import com.lhv.loanmanagement.loan.dto.CreateLoanRequest;
+import com.lhv.loanmanagement.loan.exception.LoanNotFoundException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
+
+import java.util.UUID;
+
+@Slf4j
+@Service
+public class LoanService {
+
+    private final LoanRepository loanRepository;
+
+    public LoanService(LoanRepository loanRepository) {
+        this.loanRepository = loanRepository;
+    }
+
+    @Transactional
+    public Loan create(CreateLoanRequest request) {
+        Assert.notNull(request, "CreateLoanRequest cannot be null");
+        
+        log.debug("Creating new loan: type={}, amount={}, periodMonths={}, interestRate={}, scheduleType={}, startDate={}",
+                request.getLoanType(), request.getAmount(), request.getPeriodMonths(),
+                request.getAnnualInterestRate(), request.getScheduleType(), request.getStartDate());
+
+        Loan loan = Loan.builder()
+                .loanType(request.getLoanType())
+                .amount(request.getAmount())
+                .periodMonths(request.getPeriodMonths())
+                .annualInterestRate(request.getAnnualInterestRate())
+                .scheduleType(request.getScheduleType())
+                .startDate(request.getStartDate())
+                .build();
+
+        Loan saved = loanRepository.save(loan);
+        log.info("Created loan with id={}", saved.getId());
+        return saved;
+    }
+
+    @Transactional(readOnly = true)
+    public Loan findById(UUID id) {
+        Assert.notNull(id, "Loan ID cannot be null");
+        
+        log.debug("Finding loan by id={}", id);
+        return loanRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("Loan not found with id={}", id);
+                    return new LoanNotFoundException("Loan not found with id: " + id);
+                });
+    }
+}
+
