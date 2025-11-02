@@ -1,5 +1,6 @@
 package com.lhv.loanmanagement.loan.dto;
 
+import com.lhv.loanmanagement.loan.Loan;
 import com.lhv.loanmanagement.loan.enums.LoanType;
 import com.lhv.loanmanagement.loan.enums.ScheduleType;
 import lombok.AllArgsConstructor;
@@ -24,5 +25,17 @@ public class LoanResponse {
     private BigDecimal annualInterestRate;
     private ScheduleType scheduleType;
     private LocalDate startDate;
+
+    public static LoanResponse from(Loan loan) {
+        return LoanResponse.builder()
+                .id(loan.getId())
+                .loanType(loan.getLoanType())
+                .amount(loan.getAmount())
+                .periodMonths(loan.getPeriodMonths())
+                .annualInterestRate(loan.getAnnualInterestRate())
+                .scheduleType(loan.getScheduleType())
+                .startDate(loan.getStartDate())
+                .build();
+    }
 }
 

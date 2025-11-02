@@ -2,7 +2,6 @@ package com.lhv.loanmanagement.loan.service;
 
 import com.lhv.loanmanagement.loan.Loan;
 import com.lhv.loanmanagement.loan.LoanRepository;
-import com.lhv.loanmanagement.loan.dto.CreateLoanRequest;
 import com.lhv.loanmanagement.loan.exception.LoanNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,21 +21,12 @@ public class LoanService {
     }
 
     @Transactional
-    public Loan create(CreateLoanRequest request) {
-        Assert.notNull(request, "CreateLoanRequest cannot be null");
+    public Loan create(Loan loan) {
+        Assert.notNull(loan, "Loan cannot be null");
         
         log.debug("Creating new loan: type={}, amount={}, periodMonths={}, interestRate={}, scheduleType={}, startDate={}",
-                request.getLoanType(), request.getAmount(), request.getPeriodMonths(),
-                request.getAnnualInterestRate(), request.getScheduleType(), request.getStartDate());
-
-        Loan loan = Loan.builder()
-                .loanType(request.getLoanType())
-                .amount(request.getAmount())
-                .periodMonths(request.getPeriodMonths())
-                .annualInterestRate(request.getAnnualInterestRate())
-                .scheduleType(request.getScheduleType())
-                .startDate(request.getStartDate())
-                .build();
+                loan.getLoanType(), loan.getAmount(), loan.getPeriodMonths(),
+                loan.getAnnualInterestRate(), loan.getScheduleType(), loan.getStartDate());
 
         Loan saved = loanRepository.save(loan);
         log.info("Created loan with id={}", saved.getId());
