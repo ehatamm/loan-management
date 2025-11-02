@@ -1,5 +1,7 @@
 package com.lhv.loanmanagement.loan;
 
+import com.lhv.loanmanagement.loan.enums.LoanType;
+import com.lhv.loanmanagement.loan.enums.ScheduleType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
