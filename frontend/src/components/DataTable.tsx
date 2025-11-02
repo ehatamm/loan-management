@@ -2,7 +2,7 @@ import { Box, CircularProgress, Paper, Typography, Alert } from '@mui/material';
 import { DataGrid, GridColDef, GridValidRowModel } from '@mui/x-data-grid';
 
 interface DataTableProps<T extends GridValidRowModel> {
-  title: string;
+  title?: string;
   columns: GridColDef<T>[];
   rows: T[];
   loading: boolean;
@@ -10,6 +10,7 @@ interface DataTableProps<T extends GridValidRowModel> {
   emptyMessage?: string;
   onRowClick?: (id: string | number) => void;
   getRowId?: (row: T, index: number) => string | number;
+  disablePaper?: boolean;
 }
 
 export function DataTable<T extends GridValidRowModel>({
@@ -21,35 +22,43 @@ export function DataTable<T extends GridValidRowModel>({
   emptyMessage,
   onRowClick,
   getRowId,
+  disablePaper = false,
 }: DataTableProps<T>) {
+  const paperSx = disablePaper 
+    ? { p: 0, mt: 0 }
+    : { p: 3, mt: title ? 2 : 0 };
+
+  const renderContent = (content: React.ReactNode) => {
+    if (disablePaper) {
+      return <Box sx={paperSx}>{content}</Box>;
+    }
+    return <Paper sx={paperSx}>{content}</Paper>;
+  };
+
   if (loading) {
-    return (
-      <Paper sx={{ p: 3, mt: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-          <CircularProgress />
-        </Box>
-      </Paper>
+    return renderContent(
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+        <CircularProgress />
+      </Box>
     );
   }
 
   if (error) {
-    return (
-      <Paper sx={{ p: 3, mt: 2 }}>
-        <Alert severity="error">{error}</Alert>
-      </Paper>
-    );
+    return renderContent(<Alert severity="error">{error}</Alert>);
   }
 
   if (rows.length === 0) {
-    return (
-      <Paper sx={{ p: 3, mt: 2 }}>
-        <Typography variant="h5" component="h2" gutterBottom>
-          {title}
-        </Typography>
+    return renderContent(
+      <>
+        {title && (
+          <Typography variant="h5" component="h2" gutterBottom>
+            {title}
+          </Typography>
+        )}
         <Alert severity="info" sx={{ mt: 2 }}>
           {emptyMessage || 'No data available.'}
         </Alert>
-      </Paper>
+      </>
     );
   }
 
@@ -67,11 +76,13 @@ export function DataTable<T extends GridValidRowModel>({
       }
     : undefined;
 
-  return (
-    <Paper sx={{ p: 3, mt: 2 }}>
-      <Typography variant="h5" component="h2" gutterBottom>
-        {title}
-      </Typography>
+  return renderContent(
+    <>
+      {title && (
+        <Typography variant="h5" component="h2" gutterBottom>
+          {title}
+        </Typography>
+      )}
       <DataGrid
         rows={processedRows}
         columns={columns}
@@ -90,7 +101,7 @@ export function DataTable<T extends GridValidRowModel>({
           },
         }}
       />
-    </Paper>
+    </>
   );
 }
 

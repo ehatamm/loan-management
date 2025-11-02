@@ -21,7 +21,7 @@ export function FormSelectField<T extends string>({
 
   return (
     <FormControl fullWidth>
-      <InputLabel id={`${id}-label`}>{label}</InputLabel>
+      <InputLabel id={`${id}-label`} shrink>{label}</InputLabel>
       <Select
         labelId={`${id}-label`}
         id={id}
