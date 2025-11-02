@@ -1,6 +1,7 @@
 package com.lhv.loanmanagement.schedule.calculator;
 
 import com.lhv.loanmanagement.loan.Loan;
+import com.lhv.loanmanagement.loan.enums.ScheduleType;
 import com.lhv.loanmanagement.schedule.model.MonthlyPaymentCalculation;
 import com.lhv.loanmanagement.schedule.model.ScheduleItem;
 import org.springframework.stereotype.Component;
@@ -13,6 +14,11 @@ import static com.lhv.loanmanagement.schedule.FinancialCalculationConstants.*;
 
 @Component
 public class AnnuityScheduleCalculator extends AbstractScheduleCalculator {
+
+    @Override
+    public ScheduleType getScheduleType() {
+        return ScheduleType.ANNUITY;
+    }
 
     @Override
     public List<ScheduleItem> calculate(Loan loan) {
