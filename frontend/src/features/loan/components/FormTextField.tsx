@@ -5,7 +5,7 @@ interface FormTextFieldProps extends Omit<TextFieldProps, 'onChange'> {
   value: string | number;
 }
 
-export function FormTextField({ onChange, ...props }: FormTextFieldProps) {
+export function FormTextField({ onChange, value, ...props }: FormTextFieldProps) {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = props.type === 'number' ? Number(event.target.value) : event.target.value;
     onChange(value);
