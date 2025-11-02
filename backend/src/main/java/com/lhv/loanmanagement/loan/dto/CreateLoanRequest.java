@@ -1,5 +1,6 @@
 package com.lhv.loanmanagement.loan.dto;
 
+import com.lhv.loanmanagement.loan.Loan;
 import com.lhv.loanmanagement.loan.enums.LoanType;
 import com.lhv.loanmanagement.loan.enums.ScheduleType;
 import jakarta.validation.constraints.*;
@@ -40,5 +41,16 @@ public class CreateLoanRequest {
 
     @NotNull(message = "Start date is required")
     private LocalDate startDate;
+
+    public Loan toEntity() {
+        return Loan.builder()
+                .loanType(this.loanType)
+                .amount(this.amount)
+                .periodMonths(this.periodMonths)
+                .annualInterestRate(this.annualInterestRate)
+                .scheduleType(this.scheduleType)
+                .startDate(this.startDate)
+                .build();
+    }
 }
 
