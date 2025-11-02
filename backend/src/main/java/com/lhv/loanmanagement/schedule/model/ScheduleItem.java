@@ -1,4 +1,4 @@
-package com.lhv.loanmanagement.loan.model;
+package com.lhv.loanmanagement.schedule.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Data
 @NoArgsConstructor
@@ -13,7 +14,7 @@ import java.math.BigDecimal;
 @Builder
 public class ScheduleItem {
 
-    private Integer monthIndex;
+    private LocalDate paymentDate;
     private BigDecimal payment;
     private BigDecimal principal;
     private BigDecimal interest;

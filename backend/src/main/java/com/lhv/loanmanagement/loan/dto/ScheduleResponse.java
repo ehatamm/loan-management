@@ -1,6 +1,6 @@
 package com.lhv.loanmanagement.loan.dto;
 
-import com.lhv.loanmanagement.loan.model.ScheduleItem;
+import com.lhv.loanmanagement.schedule.model.ScheduleItem;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
