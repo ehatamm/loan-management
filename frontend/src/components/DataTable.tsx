@@ -84,6 +84,11 @@ export function DataTable<T extends GridValidRowModel>({
         }}
         onRowClick={handleRowClick}
         sx={onRowClick ? { mt: 2, cursor: 'pointer' } : { mt: 2 }}
+        slotProps={{
+          pagination: {
+            labelRowsPerPage: 'Rows per page:',
+          },
+        }}
       />
     </Paper>
   );

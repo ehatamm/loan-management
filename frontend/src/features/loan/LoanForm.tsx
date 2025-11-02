@@ -11,6 +11,7 @@ import type { CreateLoanRequest } from '../../types';
 import { LoanType, ScheduleType } from '../../types';
 import { FormSelectField } from './components/FormSelectField';
 import { FormTextField } from './components/FormTextField';
+import { NumericInput } from './components/NumericInput';
 
 interface LoanFormProps {
   onSuccess?: (loanId: string) => void;
@@ -20,7 +21,7 @@ export function LoanForm({ onSuccess }: LoanFormProps) {
   const [formData, setFormData] = useState<CreateLoanRequest>({
     loanType: LoanType.CONSUMER,
     amount: 0,
-    periodMonths: 12,
+    periodMonths: 0,
     annualInterestRate: 0,
     scheduleType: ScheduleType.ANNUITY,
     startDate: new Date().toISOString().split('T')[0],
@@ -47,7 +48,7 @@ export function LoanForm({ onSuccess }: LoanFormProps) {
       setFormData({
         loanType: LoanType.CONSUMER,
         amount: 0,
-        periodMonths: 12,
+        periodMonths: 0,
         annualInterestRate: 0,
         scheduleType: ScheduleType.ANNUITY,
         startDate: new Date().toISOString().split('T')[0],
@@ -83,28 +84,32 @@ export function LoanForm({ onSuccess }: LoanFormProps) {
           ]}
         />
 
-        <FormTextField
+        <NumericInput
           label="Amount"
-          type="number"
           value={formData.amount}
-          onChange={(value) => updateField('amount', value as number)}
-          inputProps={{ min: 0.01, step: 0.01 }}
+          onChange={(value) => updateField('amount', value)}
+          allowDecimals
+          min={0.01}
+          required
         />
 
-        <FormTextField
+        <NumericInput
           label="Period (Months)"
-          type="number"
           value={formData.periodMonths}
-          onChange={(value) => updateField('periodMonths', value as number)}
-          inputProps={{ min: 1 }}
+          onChange={(value) => updateField('periodMonths', value)}
+          allowDecimals={false}
+          min={1}
+          required
         />
 
-        <FormTextField
+        <NumericInput
           label="Annual Interest Rate (%)"
-          type="number"
           value={formData.annualInterestRate}
-          onChange={(value) => updateField('annualInterestRate', value as number)}
-          inputProps={{ min: 0, max: 100, step: 0.01 }}
+          onChange={(value) => updateField('annualInterestRate', value)}
+          allowDecimals
+          min={0.01}
+          max={100}
+          required
         />
 
         <FormSelectField
