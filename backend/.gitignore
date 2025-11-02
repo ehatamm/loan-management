@@ -1,0 +1,45 @@
+# Java / Gradle
+*.class
+*.log
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+.gradle/
+build/
+out/
+target/
+*.iml
+*.ipr
+*.iws
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+
+# Spring Boot - local development overrides (optional, for developer convenience)
+application-local.yml
+application-local.properties
+
+# Flyway
+*.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
