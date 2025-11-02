@@ -34,12 +34,12 @@ export function ScheduleDisplay({ loanId }: ScheduleDisplayProps) {
 
   return (
     <DataTable<ScheduleItem>
-      title="Repayment Schedule"
       columns={SCHEDULE_ITEM_COLUMNS}
       rows={schedule}
       loading={loading}
       error={error}
       getRowId={(_item, index) => index}
+      disablePaper
     />
   );
 }
