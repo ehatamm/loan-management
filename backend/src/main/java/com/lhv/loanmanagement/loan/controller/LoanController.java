@@ -3,7 +3,9 @@ package com.lhv.loanmanagement.loan.controller;
 import com.lhv.loanmanagement.loan.Loan;
 import com.lhv.loanmanagement.loan.dto.CreateLoanRequest;
 import com.lhv.loanmanagement.loan.dto.LoanResponse;
+import com.lhv.loanmanagement.loan.dto.ScheduleResponse;
 import com.lhv.loanmanagement.loan.service.LoanService;
+import com.lhv.loanmanagement.schedule.service.RepaymentScheduleService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -18,9 +20,11 @@ import java.util.UUID;
 public class LoanController {
 
     private final LoanService loanService;
+    private final RepaymentScheduleService repaymentScheduleService;
 
-    public LoanController(LoanService loanService) {
+    public LoanController(LoanService loanService, RepaymentScheduleService repaymentScheduleService) {
         this.loanService = loanService;
+        this.repaymentScheduleService = repaymentScheduleService;
     }
 
     @PostMapping
@@ -40,6 +44,18 @@ public class LoanController {
         
         Loan loan = loanService.findById(id);
         LoanResponse response = LoanResponse.from(loan);
+        
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}/schedule")
+    public ResponseEntity<ScheduleResponse> getSchedule(@PathVariable UUID id) {
+        log.debug("Received request to get schedule for loan id={}", id);
+        
+        Loan loan = loanService.findById(id);
+        ScheduleResponse response = ScheduleResponse.builder()
+                .items(repaymentScheduleService.calculateSchedule(loan))
+                .build();
         
         return ResponseEntity.ok(response);
     }
