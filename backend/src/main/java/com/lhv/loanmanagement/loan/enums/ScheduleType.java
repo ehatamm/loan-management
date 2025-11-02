@@ -1,4 +1,4 @@
-package com.lhv.loanmanagement.loan;
+package com.lhv.loanmanagement.loan.enums;
 
 public enum ScheduleType {
     ANNUITY,
