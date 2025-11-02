@@ -29,6 +29,7 @@ export interface CreateLoanRequest {
 }
 
 export interface ScheduleItem {
+  id?: string | number;
   paymentDate: string; // ISO date string
   payment: number;
   principal: number;

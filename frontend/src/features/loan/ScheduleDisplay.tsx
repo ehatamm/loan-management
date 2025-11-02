@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Box, CircularProgress, Paper, Typography, Alert } from '@mui/material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { getSchedule } from '../../api/client';
 import type { ScheduleItem } from '../../types';
+import { DataTable } from '../../components/DataTable';
+import { SCHEDULE_ITEM_COLUMNS } from '../../types/columnDefinitions';
 
 interface ScheduleDisplayProps {
   loanId: string;
@@ -32,84 +32,15 @@ export function ScheduleDisplay({ loanId }: ScheduleDisplayProps) {
     }
   }, [loanId]);
 
-  const columns: GridColDef<ScheduleItem>[] = [
-    {
-      field: 'paymentDate',
-      headerName: 'Payment Date',
-      width: 150,
-      valueFormatter: (value: string) => new Date(value).toLocaleDateString(),
-    },
-    {
-      field: 'payment',
-      headerName: 'Payment',
-      width: 120,
-      type: 'number',
-      valueFormatter: (value: number) => `€${value.toFixed(2)}`,
-    },
-    {
-      field: 'principal',
-      headerName: 'Principal',
-      width: 120,
-      type: 'number',
-      valueFormatter: (value: number) => `€${value.toFixed(2)}`,
-    },
-    {
-      field: 'interest',
-      headerName: 'Interest',
-      width: 120,
-      type: 'number',
-      valueFormatter: (value: number) => `€${value.toFixed(2)}`,
-    },
-    {
-      field: 'remainingBalance',
-      headerName: 'Remaining Balance',
-      width: 150,
-      type: 'number',
-      valueFormatter: (value: number) => `€${value.toFixed(2)}`,
-    },
-  ];
-
-  const rows = schedule.map((item, index) => ({
-    id: index,
-    ...item,
-  }));
-
-  if (loading) {
-    return (
-      <Paper sx={{ p: 3, mt: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-          <CircularProgress />
-        </Box>
-      </Paper>
-    );
-  }
-
-  if (error) {
-    return (
-      <Paper sx={{ p: 3, mt: 2 }}>
-        <Alert severity="error">{error}</Alert>
-      </Paper>
-    );
-  }
-
   return (
-    <Paper sx={{ p: 3, mt: 2 }}>
-      <Typography variant="h5" component="h2" gutterBottom>
-        Repayment Schedule
-      </Typography>
-      <DataGrid
-        rows={rows}
-        columns={columns}
-        autoHeight
-        pageSizeOptions={[10, 25, 50, 100]}
-        initialState={{
-          pagination: {
-            paginationModel: { pageSize: 25 },
-          },
-        }}
-        sx={{ mt: 2 }}
-      />
-    </Paper>
+    <DataTable<ScheduleItem>
+      title="Repayment Schedule"
+      columns={SCHEDULE_ITEM_COLUMNS}
+      rows={schedule}
+      loading={loading}
+      error={error}
+      getRowId={(_item, index) => index}
+    />
   );
 }
 
