@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogTitle, IconButton } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
-import { LoanForm } from '../features/loan/LoanForm';
+import { LoanForm } from '../LoanForm';
 
-export function CreateLoanPage() {
+export function CreateLoanModal() {
   const navigate = useNavigate();
 
   const handleClose = () => {
@@ -26,7 +26,7 @@ export function CreateLoanPage() {
         },
       }}
     >
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 0 }}>
+      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 2 }}>
         Create New Loan
         <IconButton
           aria-label="close"

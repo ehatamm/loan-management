@@ -1,10 +1,9 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { Dialog, DialogTitle, IconButton, DialogContent } from '@mui/material';
+import { Dialog, DialogTitle, IconButton, DialogContent, Alert } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
-import { ScheduleDisplay } from '../features/loan/ScheduleDisplay';
-import { Alert } from '@mui/material';
+import { ScheduleDisplay } from '../ScheduleDisplay';
 
-export function SchedulePage() {
+export function ScheduleModal() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
