@@ -14,7 +14,6 @@ This is a monorepo containing:
 
 - Create loans with different types (Consumer, Car, Mortgage)
 - Calculate repayment schedules (Annuity, Equal Principal)
-- Export schedules as CSV
 - RESTful API with proper validation and error handling
 
 ## Tech Stack
