@@ -1,9 +1,10 @@
+import { useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box, Button } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
-import { LoansList } from '../features/loan/LoansList';
-import { CreateLoanPage } from './CreateLoanPage';
-import { SchedulePage } from './SchedulePage';
+import { LoansList } from './LoansList';
+import { CreateLoanModal } from './modals/CreateLoanModal';
+import { ScheduleModal } from '../../features/schedule/modals/ScheduleModal';
 
 export function LoansPage() {
   const navigate = useNavigate();
@@ -14,7 +15,10 @@ export function LoansPage() {
   };
 
   const isCreateModalOpen = location.pathname === '/loans/new';
-  const isScheduleModalOpen = location.pathname.match(/^\/loans\/[^/]+\/schedule$/);
+  const isScheduleModalOpen = useMemo(
+    () => location.pathname.match(/^\/loans\/[^/]+\/schedule$/),
+    [location.pathname]
+  );
 
   return (
     <Box>
@@ -31,8 +35,8 @@ export function LoansPage() {
         </Button>
       </Box>
       <LoansList onLoanSelect={handleLoanSelect} />
-      {isCreateModalOpen && <CreateLoanPage />}
-      {isScheduleModalOpen && <SchedulePage />}
+      {isCreateModalOpen && <CreateLoanModal />}
+      {isScheduleModalOpen && <ScheduleModal />}
     </Box>
   );
 }

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { getSchedule } from '../../api/client';
-import type { ScheduleItem } from '../../types';
+import type { ScheduleItem } from './types';
 import { DataTable } from '../../components/DataTable';
-import { SCHEDULE_ITEM_COLUMNS } from '../../types/columnDefinitions';
+import { SCHEDULE_ITEM_COLUMNS } from './types/columnDefinitions';
 
 interface ScheduleDisplayProps {
   loanId: string;
@@ -14,22 +14,32 @@ export function ScheduleDisplay({ loanId }: ScheduleDisplayProps) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const abortController = new AbortController();
+
     const fetchSchedule = async () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await getSchedule(loanId);
+        const response = await getSchedule(loanId, abortController.signal);
         setSchedule(response.items);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load schedule');
+        if (err instanceof Error && err.name !== 'AbortError') {
+          setError(err.message || 'Failed to load schedule');
+        }
       } finally {
-        setLoading(false);
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
     if (loanId) {
       fetchSchedule();
     }
+
+    return () => {
+      abortController.abort();
+    };
   }, [loanId]);
 
   return (
