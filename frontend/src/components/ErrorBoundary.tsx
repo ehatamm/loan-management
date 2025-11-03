@@ -27,7 +27,11 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('Error caught by ErrorBoundary:', error, errorInfo);
+    // Log error in development, send to error tracking service in production
+    if (import.meta.env.DEV) {
+      console.error('Error caught by ErrorBoundary:', error, errorInfo);
+    }
+    // TODO: Send to error tracking service (e.g., Sentry, LogRocket)
   }
 
   handleReset = (): void => {

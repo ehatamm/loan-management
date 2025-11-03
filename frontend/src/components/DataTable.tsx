@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Box, CircularProgress, Paper, Typography, Alert } from '@mui/material';
 import { DataGrid, GridColDef, GridValidRowModel } from '@mui/x-data-grid';
 
@@ -62,10 +63,14 @@ export function DataTable<T extends GridValidRowModel>({
     );
   }
 
-  const processedRows = rows.map((row, index) => ({
-    ...row,
-    id: getRowId ? getRowId(row, index) : (row.id ?? index),
-  }));
+  const processedRows = useMemo(
+    () =>
+      rows.map((row, index) => ({
+        ...row,
+        id: getRowId ? getRowId(row, index) : (row.id ?? index),
+      })),
+    [rows, getRowId]
+  );
 
   const handleRowClick = onRowClick 
     ? (params: { row: T & { id: string | number } }) => {
