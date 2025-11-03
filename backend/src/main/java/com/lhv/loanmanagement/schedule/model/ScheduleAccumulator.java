@@ -21,6 +21,7 @@ public class ScheduleAccumulator {
     public void addItem(ScheduleItem item, BigDecimal newBalance) {
         this.items.add(item);
         this.balance = newBalance;
+        // Track sum of rounded principals for exact totals (industry standard)
         this.accumulatedPrincipal = this.accumulatedPrincipal.add(item.getPrincipal());
     }
 }

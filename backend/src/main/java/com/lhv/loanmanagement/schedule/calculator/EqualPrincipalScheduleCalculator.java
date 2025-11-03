@@ -28,7 +28,7 @@ public class EqualPrincipalScheduleCalculator extends AbstractScheduleCalculator
         Function<BigDecimal, MonthlyPaymentCalculation> calculator = 
             balance -> calculateMonthlyPayment(balance, monthlyRate, fixedPrincipal);
         
-        return buildScheduleItems(loan, monthlyRate, calculator);
+        return buildScheduleItems(loan, monthlyRate, calculator, null);
     }
 
     private BigDecimal calculateFixedPrincipal(BigDecimal principal, int periodMonths) {
