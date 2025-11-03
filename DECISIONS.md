@@ -5,94 +5,81 @@ This document records key architectural and technical decisions made during the 
 ## Domain Model Decisions
 
 ### LoanType and ScheduleType as Enums
-**Decision:** Use Java enums (`LoanType`, `ScheduleType`) instead of extendable database tables.
+**Decision:** Use Java enums instead of database tables for loan and schedule types.
 
-**Rationale:**
-- Reduces complexity in the MVP
-- Loan types (CONSUMER, CAR, MORTGAGE) and schedule types (ANNUITY, EQUAL_PRINCIPAL) are stable and well-defined
-- Eliminates need for join tables and additional queries
-- Simpler to validate and use in business logic
-- Faster to implement and maintain
+**Rationale:** Reduces complexity, eliminates join tables, simpler validation. Types (CONSUMER/CAR/MORTGAGE, ANNUITY/EQUAL_PRINCIPAL) are stable and well-defined for MVP scope.
 
-**Trade-offs:**
-- Less flexible if new types need to be added frequently (would require code changes and redeployment)
-- Not suitable if types need to be configurable by end users
-- Acceptable for MVP scope where types are fixed and defined
+**Trade-offs:** Less flexible for dynamic type configuration, requires code changes for new types.
 
 ## Testing Decisions
 
 ### Exclusion of Integration and MVC Tests
-**Decision:** Exclude integration tests and MVC controller tests to reduce development time.
+**Decision:** Exclude integration and MVC controller tests to reduce development time.
 
-**Rationale:**
-- Focus on core business logic validation through unit tests
-- Time constraints for MVP delivery
-- Unit tests for repayment schedule calculations provide sufficient coverage for critical functionality
-- End-to-end validation can be performed manually during development
+**Rationale:** Focus on core business logic via unit tests. Time constraints for MVP delivery. Manual end-to-end validation acceptable for MVP scope.
 
-**Trade-offs:**
-- Reduced confidence in API contract validation
-- Manual testing required for endpoint behavior
-- Potential for integration issues not caught by tests
-- Acceptable for MVP scope where speed of delivery is prioritized
+**Trade-offs:** Reduced API contract validation, manual testing required.
 
-## Technology Stack Decisions
+### Unit Testing with Mocked Dependencies
+**Decision:** Mock `ScheduleCalculator` implementations in `RepaymentScheduleServiceTest`.
 
-### Use of Lombok
-**Decision:** Include Lombok for reducing boilerplate code in JPA entities.
+**Rationale:** Tests service in isolation. Service responsibility is calculator selection/delegation, not calculation logic (tested separately). Faster execution, clearer test intent.
 
-**Rationale:**
-- Industry standard in Spring Boot projects
-- Reduces code verbosity while maintaining clarity
-- Improves maintainability with less boilerplate
-- Common practice in production Spring Boot applications
-
-**Annotations Used:**
-- `@Data` - generates getters, setters, toString, equals, hashCode
-- `@NoArgsConstructor` - required by JPA
-- `@AllArgsConstructor` - enables full constructor
-- `@Builder` - provides builder pattern for cleaner object creation
+**Implementation:** Mockito mocks verify calculator selection and error handling. Calculators tested in dedicated classes.
 
 ## Design Pattern Decisions
 
 ### Strategy Pattern for Schedule Calculators
-**Decision:** Use the Strategy pattern to separate different repayment schedule calculation algorithms (Annuity vs Equal Principal) into dedicated calculator classes.
+**Decision:** Separate calculation algorithms (Annuity vs Equal Principal) into dedicated calculator classes.
 
-**Rationale:**
-- Each calculation type has distinct logic that was becoming difficult to maintain in a single service class
-- Allows us to isolate calculation-specific code, making it easier to understand and modify
-- Makes adding new schedule types straightforward - just create a new calculator class
-- Shared utilities (like monthly rate calculation, interest calculation, schedule building) are centralized in the abstract base class
-- Service layer becomes a simple facade that delegates to the right calculator based on loan schedule type
+**Rationale:** Isolates calculation-specific code, easier to understand/modify, straightforward to add new schedule types. Shared utilities in abstract base class.
 
-**Trade-offs:**
-- Slightly more files to navigate compared to having everything in one service
-- Requires understanding of the pattern, but it's a well-known design pattern
-- Adds a bit of indirection, but the code organization benefits outweigh this
-
-**Implementation:**
-- `ScheduleCalculator` interface defines the contract
-- `AbstractScheduleCalculator` provides shared functionality
-- `AnnuityScheduleCalculator` and `EqualPrincipalScheduleCalculator` implement specific algorithms
-- `RepaymentScheduleService` uses a map of calculators to delegate calls
+**Implementation:** `ScheduleCalculator` interface, `AbstractScheduleCalculator` base, concrete calculators, `RepaymentScheduleService` delegates via map.
 
 ### Collector API for Schedule Building
-**Decision:** Use Java's `Collector.of()` to build repayment schedules from a stream of payment dates, instead of traditional for-loops or mutable state arrays.
+**Decision:** Use `Collector.of()` to build schedules from payment date stream instead of for-loops.
 
-**Rationale:**
-- The schedule building logic requires accumulating payment items while maintaining a running balance that changes with each iteration
-- `Collector.of()` provides a clean way to handle this accumulation pattern with immutable intermediate results
-- More functional programming style that fits well with Java streams
-- The accumulator pattern makes it explicit that we're building up a list while tracking state (the remaining balance)
-- Avoids the need for index-based loops or array manipulation
+**Rationale:** Clean accumulation pattern with immutable results. Explicit state tracking (balance, items). Avoids index-based loops.
 
-**Trade-offs:**
-- Might be less familiar to developers who haven't worked with custom collectors before
-- Slightly more complex than a simple for-loop, but much cleaner than managing mutable state manually
-- We explicitly disallow parallel streams since each month's calculation depends on the previous month's balance
+**Implementation:** `ScheduleAccumulator` holds balance, accumulatedPrincipal, items. Collector built with supplier, accumulator, combiner (parallel disabled), finisher.
+
+### Precision Management in Financial Calculations (Partially Implemented)
+**Decision:** Track accumulated principal separately from high-precision balance to ensure exact totals. **Implementation incomplete - tests failing.**
+
+**Rationale:** Financial calculations must be exact to the cent. Intermediate calculations use high precision (scale 10+), final results rounded to scale 2.
+
+**Current Status:**
+- `ScheduleAccumulator` tracks `accumulatedPrincipal` (sum of rounded principals, scale 2)
+- High-precision `balance` (scale 10) maintained for calculations
+- Last payment adjustment partially implemented
+- **Known Issues:** Precision mismatch unresolved, tests `shouldCalculateAnnuityScheduleWithCorrectTotals` and `shouldCalculateExactTotalsForLargeLoanAndLongTerm` failing
+- **Critical:** Must resolve before production
+
+## Infrastructure Decisions
+
+### Docker Compose for Local Development
+**Decision:** Multi-stage Docker builds for zero-configuration local development.
+
+**Rationale:** Consistent environment, no local setup required, production-like testing, faster onboarding.
 
 **Implementation:**
-- `ScheduleAccumulator` holds the current balance and list of items
-- `Collector.of()` creates a custom collector with supplier, accumulator, combiner (throws exception for parallel), and finisher
-- Stream of dates is generated with `Stream.iterate()`, then collected into the final schedule
+- Multi-stage: Backend (Gradle → JRE Alpine), Frontend (Node.js → Nginx)
+- Health checks ensure startup order: database → backend → frontend
+- Nginx proxies `/api/*` to backend
+- Ports: Database 5432, Backend 8080, Frontend 3000
 
+**Trade-offs:** Larger initial build time, requires Docker knowledge, but consistency benefits outweigh for MVP.
+
+## Unimplemented Features and Future Improvements
+
+### Balloon Loans (Car Lease Support)
+**Not Implemented:** Time constraints. Would require `ScheduleType.BALLOON` enum and new calculator. Impact: Car loans use standard schedules, not true leases.
+
+### Separate First Payment Date
+**Not Implemented:** Initial assumption that start date = first payment date. Discovered limitation late. Would require migration/API changes. **Limitation:** Unrealistic for real-world scenarios with payment delays.
+
+### Created Date in Frontend
+**Not Implemented:** Time constraints, lower priority. **Impact:** No sorting by creation date in frontend.
+
+### CSV Export for Repayment Schedules
+**Not Implemented:** Precision issue became priority, nice-to-have deprioritized. **Impact:** Export endpoint `/api/loans/{id}/schedule/export` not implemented. Can be added post-precision fix.
