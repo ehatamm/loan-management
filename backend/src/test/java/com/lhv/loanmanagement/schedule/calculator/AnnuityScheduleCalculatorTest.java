@@ -26,13 +26,6 @@ class AnnuityScheduleCalculatorTest {
     @Test
     @DisplayName("Should calculate annuity schedule with correct totals")
     void shouldCalculateAnnuityScheduleWithCorrectTotals() {
-        // TODO: This test currently fails due to precision mismatch in last payment calculation.
-        // Problem: The accumulator tracks balance at high precision (scale 10), while accumulatedPrincipal
-        // sums rounded principals (scale 2). When adjusting the last payment, using balanceBefore from
-        // high-precision accumulator vs remainingPrincipal from rounded sum creates inconsistency.
-        // The last payment adjustment needs to ensure total principal equals loan amount exactly,
-        // while maintaining correct interest calculation based on the actual remaining balance.
-        
         // Given: 1000 EUR loan, 12 months, 5% annual rate
         Loan loan = Loan.builder()
                 .id(java.util.UUID.randomUUID())
@@ -90,10 +83,12 @@ class AnnuityScheduleCalculatorTest {
         // When
         List<ScheduleItem> schedule = calculator.calculate(loan);
 
-        // Then: All payments should be equal (within rounding precision)
+        // Then: All payments except the last should be exactly equal
+        // The last payment may differ to ensure exact totals (industry standard)
         BigDecimal firstPayment = schedule.get(0).getPayment();
-        for (int i = 1; i < schedule.size(); i++) {
+        for (int i = 1; i < schedule.size() - 1; i++) {
             assertThat(schedule.get(i).getPayment())
+                    .as("Payment %d should equal first payment exactly", i)
                     .isEqualByComparingTo(firstPayment);
         }
     }
@@ -167,13 +162,6 @@ class AnnuityScheduleCalculatorTest {
     @Test
     @DisplayName("Should calculate exact totals for large loan amount and long term")
     void shouldCalculateExactTotalsForLargeLoanAndLongTerm() {
-        // TODO: This test currently fails due to precision mismatch in last payment calculation.
-        // Problem: The accumulator tracks balance at high precision (scale 10), while accumulatedPrincipal
-        // sums rounded principals (scale 2). When adjusting the last payment, using balanceBefore from
-        // high-precision accumulator vs remainingPrincipal from rounded sum creates inconsistency.
-        // The last payment adjustment needs to ensure total principal equals loan amount exactly,
-        // while maintaining correct interest calculation based on the actual remaining balance.
-        
         // Given: 100,000 EUR loan, 30 years (360 months), 4.5% annual rate
         Loan loan = Loan.builder()
                 .id(java.util.UUID.randomUUID())
