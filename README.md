@@ -2,6 +2,8 @@
 
 A minimal, production-like full-stack MVP for managing loan repayment schedules.
 
+**📋 For architectural decisions and design rationale, see [DECISIONS.md](DECISIONS.md).**
+
 ## Project Structure
 
 This is a monorepo containing:
