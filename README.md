@@ -30,8 +30,17 @@ This is a monorepo containing:
 - TypeScript
 - Material UI
 
-## Getting Started
+## Quick Start with Docker
 
-See [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md) for detailed setup and development instructions.
+The easiest way to run the application is using Docker Compose:
 
-See [TASKS.md](TASKS.md) for the complete task breakdown and implementation phases.
+```bash
+docker-compose up --build
+```
+
+This will start:
+- PostgreSQL database on port 5432
+- Backend API on http://localhost:8080/api
+- Frontend application on http://localhost
+
+For more details, see [DOCKER.md](DOCKER.md).
