@@ -28,7 +28,7 @@ public class AnnuityScheduleCalculator extends AbstractScheduleCalculator {
         Function<BigDecimal, MonthlyPaymentCalculation> calculator = 
             balance -> calculateMonthlyPayment(balance, monthlyRate, payment);
         
-        return buildScheduleItems(loan, calculator);
+        return buildScheduleItems(loan, monthlyRate, calculator);
     }
 
     private BigDecimal calculateAnnuityPayment(BigDecimal principal, BigDecimal monthlyRate, int periodMonths) {
@@ -48,10 +48,8 @@ public class AnnuityScheduleCalculator extends AbstractScheduleCalculator {
         BigDecimal principal = payment.subtract(interest, MATH_CONTEXT);
         BigDecimal balanceAfter = balanceBefore.subtract(principal, MATH_CONTEXT);
         
-        MonthlyPaymentCalculation calculation = new MonthlyPaymentCalculation(
+        return new MonthlyPaymentCalculation(
             balanceBefore, interest, principal, balanceAfter);
-        
-        return calculation.adjustForNegativeBalance();
     }
 }
 

@@ -1,6 +1,5 @@
 package com.lhv.loanmanagement.schedule.model;
 
-import com.lhv.loanmanagement.schedule.FinancialCalculationConstants;
 import lombok.Value;
 
 import java.math.BigDecimal;
@@ -18,17 +17,33 @@ public class MonthlyPaymentCalculation {
         return principal.add(interest, MATH_CONTEXT);
     }
     
-    public MonthlyPaymentCalculation adjustForNegativeBalance() {
-        if (balanceAfter.compareTo(BigDecimal.ZERO) < 0) {
-            BigDecimal adjustedPrincipal = principal.add(balanceAfter, MATH_CONTEXT);
+    public MonthlyPaymentCalculation adjustRemainingBalance() {
+        BigDecimal roundedBalanceAfter = balanceAfter.setScale(RESULT_SCALE, ROUNDING_MODE);
+        if (roundedBalanceAfter.compareTo(BigDecimal.ZERO) != 0) {
+            BigDecimal adjustedPrincipal = principal.add(roundedBalanceAfter, MATH_CONTEXT);
             return new MonthlyPaymentCalculation(
-                balanceBefore,
-                interest,
-                adjustedPrincipal,
-                BigDecimal.ZERO.setScale(RESULT_SCALE, ROUNDING_MODE)
+                    balanceBefore,
+                    interest,
+                    adjustedPrincipal,
+                    BigDecimal.ZERO.setScale(RESULT_SCALE, ROUNDING_MODE)
             );
         }
         return this;
+    }
+    
+    public MonthlyPaymentCalculation withPrincipal(BigDecimal newPrincipal, BigDecimal monthlyRate) {
+        BigDecimal interest = calculateMonthlyInterest(balanceBefore, monthlyRate);
+        BigDecimal balanceAfter = balanceBefore.subtract(newPrincipal, MATH_CONTEXT);
+        return new MonthlyPaymentCalculation(
+                balanceBefore,
+                interest,
+                newPrincipal,
+                balanceAfter
+        ).adjustRemainingBalance();
+    }
+    
+    private static BigDecimal calculateMonthlyInterest(BigDecimal balance, BigDecimal monthlyRate) {
+        return balance.multiply(monthlyRate, MATH_CONTEXT);
     }
 }
 
