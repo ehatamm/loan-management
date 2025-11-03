@@ -43,17 +43,23 @@ This document records key architectural and technical decisions made during the 
 
 **Implementation:** `ScheduleAccumulator` holds balance, accumulatedPrincipal, items. Collector built with supplier, accumulator, combiner (parallel disabled), finisher.
 
-### Precision Management in Financial Calculations (Partially Implemented)
-**Decision:** Track accumulated principal separately from high-precision balance to ensure exact totals. **Implementation incomplete - tests failing.**
+### Precision Management in Financial Calculations
+**Decision:** Track accumulated principal separately from high-precision balance to ensure exact totals.
 
 **Rationale:** Financial calculations must be exact to the cent. Intermediate calculations use high precision (scale 10+), final results rounded to scale 2.
 
-**Current Status:**
+**Implementation:**
 - `ScheduleAccumulator` tracks `accumulatedPrincipal` (sum of rounded principals, scale 2)
 - High-precision `balance` (scale 10) maintained for calculations
-- Last payment adjustment partially implemented
-- **Known Issues:** Precision mismatch unresolved, tests `shouldCalculateAnnuityScheduleWithCorrectTotals` and `shouldCalculateExactTotalsForLargeLoanAndLongTerm` failing
-- **Critical:** Must resolve before production
+- Last payment adjustment uses accumulated principal to ensure total equals loan amount exactly
+- All tests passing with exact totals verified
+
+### Template Method for Schedule Item Formatting
+**Decision:** Use template method pattern for formatting calculations into schedule items.
+
+**Rationale:** Strategy-specific formatting logic (e.g., annuity constant payments) belongs in concrete calculators. Base class provides default rounding behavior.
+
+**Implementation:** `toScheduleItem()` template method in `AbstractScheduleCalculator`. `AnnuityScheduleCalculator` overrides to use constant payment for non-last payments. Removed unused `MonthlyPaymentCalculation` methods.
 
 ## Infrastructure Decisions
 
@@ -83,3 +89,14 @@ This document records key architectural and technical decisions made during the 
 
 ### CSV Export for Repayment Schedules
 **Not Implemented:** Precision issue became priority, nice-to-have deprioritized. **Impact:** Export endpoint `/api/loans/{id}/schedule/export` not implemented. Can be added post-precision fix.
+
+## Known Limitations and Design Mistakes
+
+### Annual Interest Rate Precision
+**Limitation:** Interest rates stored as `NUMERIC(5, 2)` (2 decimal places, e.g., 5.00%).
+
+**Issue:** Insufficient precision for floating interest loans based on EURIBOR (European Interbank Offer Rate), which typically requires three decimal places (e.g., 3.456%).
+
+**Impact:** Cannot accurately represent EURIBOR-based floating rates. Would require migration to `NUMERIC(5, 3)` and validation updates.
+
+**Rationale:** Initial design assumed fixed rates. EURIBOR precision requirement discovered later.
