@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { getAllLoans } from '../../api/client';
-import type { Loan } from '../../types';
+import type { Loan } from './types';
 import { DataTable } from '../../components/DataTable';
-import { LOAN_COLUMNS } from '../../types/columnDefinitions';
+import { LOAN_COLUMNS } from './types/columnDefinitions';
 
 interface LoansListProps {
   onLoanSelect: (loanId: string) => void;
@@ -14,20 +14,30 @@ export function LoansList({ onLoanSelect }: LoansListProps) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const abortController = new AbortController();
+
     const fetchLoans = async () => {
       setLoading(true);
       setError(null);
       try {
-        const loansData = await getAllLoans();
+        const loansData = await getAllLoans(abortController.signal);
         setLoans(loansData);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load loans');
+        if (err instanceof Error && err.name !== 'AbortError') {
+          setError(err.message || 'Failed to load loans');
+        }
       } finally {
-        setLoading(false);
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchLoans();
+
+    return () => {
+      abortController.abort();
+    };
   }, []);
 
   return (
