@@ -27,18 +27,28 @@ public abstract class AbstractScheduleCalculator implements ScheduleCalculator {
         return balance.multiply(monthlyRate, MATH_CONTEXT);
     }
 
-    protected List<ScheduleItem> buildScheduleItems(Loan loan, Function<BigDecimal, MonthlyPaymentCalculation> calculator) {
+    protected List<ScheduleItem> buildScheduleItems(Loan loan, BigDecimal monthlyRate, Function<BigDecimal, MonthlyPaymentCalculation> calculator) {
         BigDecimal initialBalance = loan.getAmount().setScale(CALCULATION_SCALE, ROUNDING_MODE);
+        BigDecimal loanAmount = loan.getAmount();
         int periodMonths = loan.getPeriodMonths();
         LocalDate startDate = loan.getStartDate();
         
-        return Stream.iterate(startDate, date -> date.plusMonths(1))
+        List<ScheduleItem> items = Stream.iterate(startDate, date -> date.plusMonths(1))
                 .limit(periodMonths)
                 .collect(
                     Collector.of(
                         () -> new ScheduleAccumulator(initialBalance),
                         (acc, paymentDate) -> {
-                            MonthlyPaymentCalculation calculation = calculator.apply(acc.getBalance());
+                            boolean isLastPayment = acc.getItems().size() == periodMonths - 1;
+                            MonthlyPaymentCalculation calculation;
+                            
+                            calculation = calculator.apply(acc.getBalance());
+                            
+                            if (isLastPayment) {
+                                BigDecimal remainingPrincipal = loanAmount.subtract(acc.getAccumulatedPrincipal());
+                                calculation = calculation.withPrincipal(remainingPrincipal, monthlyRate);
+                            }
+                            
                             ScheduleItem item = buildScheduleItem(paymentDate, calculation);
                             acc.addItem(item, calculation.getBalanceAfter());
                         },
@@ -48,6 +58,8 @@ public abstract class AbstractScheduleCalculator implements ScheduleCalculator {
                         ScheduleAccumulator::getItems
                     )
                 );
+        
+        return items;
     }
 
     protected ScheduleItem buildScheduleItem(LocalDate paymentDate, MonthlyPaymentCalculation calculation) {
