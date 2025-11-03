@@ -3,7 +3,11 @@ import { Dialog, DialogTitle, IconButton } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { LoanForm } from '../LoanForm';
 
-export function CreateLoanModal() {
+interface CreateLoanModalProps {
+  onLoanCreated?: () => void;
+}
+
+export function CreateLoanModal({ onLoanCreated }: CreateLoanModalProps) {
   const navigate = useNavigate();
 
   const handleClose = () => {
@@ -11,6 +15,7 @@ export function CreateLoanModal() {
   };
 
   const handleSuccess = (loanId: string) => {
+    onLoanCreated?.();
     navigate(`/loans/${loanId}/schedule`);
   };
 

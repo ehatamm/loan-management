@@ -1,14 +1,15 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box, Button } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
-import { LoansList } from './LoansList';
+import { LoansList, LoansListRef } from './LoansList';
 import { CreateLoanModal } from './modals/CreateLoanModal';
 import { ScheduleModal } from '../../features/schedule/modals/ScheduleModal';
 
 export function LoansPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const loansListRef = useRef<LoansListRef>(null);
 
   const handleLoanSelect = (loanId: string) => {
     navigate(`/loans/${loanId}/schedule`);
@@ -34,8 +35,8 @@ export function LoansPage() {
           Create Loan
         </Button>
       </Box>
-      <LoansList onLoanSelect={handleLoanSelect} />
-      {isCreateModalOpen && <CreateLoanModal />}
+      <LoansList ref={loansListRef} onLoanSelect={handleLoanSelect} />
+      {isCreateModalOpen && <CreateLoanModal onLoanCreated={() => loansListRef.current?.refetch()} />}
       {isScheduleModalOpen && <ScheduleModal />}
     </Box>
   );
