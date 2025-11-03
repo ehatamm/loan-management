@@ -42,6 +42,6 @@ docker-compose up --build
 This will start:
 - PostgreSQL database on port 5432
 - Backend API on http://localhost:8080/api
-- Frontend application on http://localhost
+- Frontend application on http://localhost:3000
 
 For more details, see [DOCKER.md](DOCKER.md).
