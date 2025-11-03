@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useImperativeHandle, forwardRef } from 'react';
 import { getAllLoans } from '../../api/client';
 import type { Loan } from './types';
 import { DataTable } from '../../components/DataTable';
@@ -8,33 +8,42 @@ interface LoansListProps {
   onLoanSelect: (loanId: string) => void;
 }
 
-export function LoansList({ onLoanSelect }: LoansListProps) {
+export interface LoansListRef {
+  refetch: () => void;
+}
+
+export const LoansList = forwardRef<LoansListRef, LoansListProps>(({ onLoanSelect }, ref) => {
   const [loans, setLoans] = useState<Loan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const fetchLoans = async (abortSignal?: AbortSignal) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const loansData = await getAllLoans(abortSignal);
+      setLoans(loansData);
+    } catch (err) {
+      if (err instanceof Error && err.name !== 'AbortError') {
+        setError(err.message || 'Failed to load loans');
+      }
+    } finally {
+      if (!abortSignal?.aborted) {
+        setLoading(false);
+      }
+    }
+  };
+
+  useImperativeHandle(ref, () => ({
+    refetch: () => {
+      const abortController = new AbortController();
+      fetchLoans(abortController.signal);
+    },
+  }));
+
   useEffect(() => {
     const abortController = new AbortController();
-
-    const fetchLoans = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const loansData = await getAllLoans(abortController.signal);
-        setLoans(loansData);
-      } catch (err) {
-        if (err instanceof Error && err.name !== 'AbortError') {
-          setError(err.message || 'Failed to load loans');
-        }
-      } finally {
-        if (!abortController.signal.aborted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchLoans();
-
+    fetchLoans(abortController.signal);
     return () => {
       abortController.abort();
     };
@@ -51,5 +60,7 @@ export function LoansList({ onLoanSelect }: LoansListProps) {
       onRowClick={(id) => onLoanSelect(String(id))}
     />
   );
-}
+});
+
+LoansList.displayName = 'LoansList';
 
