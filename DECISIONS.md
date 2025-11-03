@@ -2,84 +2,76 @@
 
 This document records key architectural and technical decisions made during the development of the loan management MVP.
 
-## Domain Model Decisions
-
-### LoanType and ScheduleType as Enums
-**Decision:** Use Java enums instead of database tables for loan and schedule types.
-
-**Rationale:** Reduces complexity, eliminates join tables, simpler validation. Types (CONSUMER/CAR/MORTGAGE, ANNUITY/EQUAL_PRINCIPAL) are stable and well-defined for MVP scope.
-
-**Trade-offs:** Less flexible for dynamic type configuration, requires code changes for new types.
-
-## Testing Decisions
-
-### Exclusion of Integration and MVC Tests
-**Decision:** Exclude integration and MVC controller tests to reduce development time.
-
-**Rationale:** Focus on core business logic via unit tests. Time constraints for MVP delivery. Manual end-to-end validation acceptable for MVP scope.
-
-**Trade-offs:** Reduced API contract validation, manual testing required.
-
-### Unit Testing with Mocked Dependencies
-**Decision:** Mock `ScheduleCalculator` implementations in `RepaymentScheduleServiceTest`.
-
-**Rationale:** Tests service in isolation. Service responsibility is calculator selection/delegation, not calculation logic (tested separately). Faster execution, clearer test intent.
-
-**Implementation:** Mockito mocks verify calculator selection and error handling. Calculators tested in dedicated classes.
-
 ## Design Pattern Decisions
 
-### Strategy Pattern for Schedule Calculators
-**Decision:** Separate calculation algorithms (Annuity vs Equal Principal) into dedicated calculator classes.
+### How We Calculate Payment Schedules
 
-**Rationale:** Isolates calculation-specific code, easier to understand/modify, straightforward to add new schedule types. Shared utilities in abstract base class.
+**The Problem:** We need to calculate payment schedules for loans, but there are different calculation methods (Annuity and Equal Principal). Each method has its own formula, but they all need to build a schedule the same way - loop through months, calculate payments, and format results.
 
-**Implementation:** `ScheduleCalculator` interface, `AbstractScheduleCalculator` base, concrete calculators, `RepaymentScheduleService` delegates via map.
+**The Solution:** We use two patterns together:
+- **Strategy Pattern**: Each calculation method (Annuity, Equal Principal) gets its own calculator class. The service picks which calculator to use based on the loan type.
+- **Template Method Pattern**: The actual schedule-building loop is shared in a base class. Each calculator provides its specific calculation logic, but the loop structure is the same.
 
-### Collector API for Schedule Building
-**Decision:** Use `Collector.of()` to build schedules from payment date stream instead of for-loops.
+**Why This Works:** 
+- Adding a new schedule type? Just create a new calculator class. No need to touch existing code.
+- Need to fix the building loop? Fix it once in the base class, not in every calculator.
+- Want to test each calculator? They're separate classes, easy to test in isolation.
 
-**Rationale:** Clean accumulation pattern with immutable results. Explicit state tracking (balance, items). Avoids index-based loops.
+**What We Tried Instead:**
+- One big method with if/else statements: Got messy fast, lots of duplicated code.
+- Just Strategy pattern (no shared loop): Each calculator duplicated the same loop code.
+- This approach: Clean, no duplication, easy to extend.
 
-**Implementation:** `ScheduleAccumulator` holds balance, accumulatedPrincipal, items. Collector built with supplier, accumulator, combiner (parallel disabled), finisher.
+**The Cost:** We have a few more classes (3-4 instead of 1), but it's worth it. The code is easier to maintain and test. If you understand basic inheritance and interfaces, you'll get this pattern quickly.
 
-### Precision Management in Financial Calculations (Partially Implemented)
-**Decision:** Track accumulated principal separately from high-precision balance to ensure exact totals. **Implementation incomplete - tests failing.**
+### Building Schedules with Streams
 
-**Rationale:** Financial calculations must be exact to the cent. Intermediate calculations use high precision (scale 10+), final results rounded to scale 2.
+**The Problem:** We need to build a list of payment items, one for each month. Each month's calculation depends on the previous month's balance.
 
-**Current Status:**
-- `ScheduleAccumulator` tracks `accumulatedPrincipal` (sum of rounded principals, scale 2)
-- High-precision `balance` (scale 10) maintained for calculations
-- Last payment adjustment partially implemented
-- **Known Issues:** Precision mismatch unresolved, tests `shouldCalculateAnnuityScheduleWithCorrectTotals` and `shouldCalculateExactTotalsForLargeLoanAndLongTerm` failing
-- **Critical:** Must resolve before production
+**The Solution:** Use Java's `Collector.of()` to build up the schedule from a stream of dates. This keeps the state management explicit (current balance, accumulated principal, list of items) and avoids index-based loops.
 
-## Infrastructure Decisions
+**Why This Works:** Clear separation of concerns. The accumulator holds the state, the collector handles the iteration. We can see exactly what state we're tracking.
 
-### Docker Compose for Local Development
-**Decision:** Multi-stage Docker builds for zero-configuration local development.
+### Money Precision and Rounding
 
-**Rationale:** Consistent environment, no local setup required, production-like testing, faster onboarding.
+**The Problem:** Financial calculations need to be exact to the cent. But we do lots of intermediate math with decimal places, and rounding errors can add up.
 
-**Implementation:**
-- Multi-stage: Backend (Gradle → JRE Alpine), Frontend (Node.js → Nginx)
-- Health checks ensure startup order: database → backend → frontend
-- Nginx proxies `/api/*` to backend
-- Ports: Database 5432, Backend 8080, Frontend 3000
+**The Solution:** 
+- Do all intermediate calculations with high precision (10+ decimal places)
+- Track the sum of rounded principals separately (to 2 decimal places)
+- Only round the final displayed values
+- For the last payment, adjust it so total principal exactly equals the loan amount
 
-**Trade-offs:** Larger initial build time, requires Docker knowledge, but consistency benefits outweigh for MVP.
+**Why This Matters:** Without this, rounding errors mean the total principal might be $1000.01 instead of exactly $1000.00. In finance, that's unacceptable.
 
-## Unimplemented Features and Future Improvements
+**How We Know It Works:** All tests verify that totals match exactly, including large loans over long terms.
 
-### Balloon Loans (Car Lease Support)
-**Not Implemented:** Time constraints. Would require `ScheduleType.BALLOON` enum and new calculator. Impact: Car loans use standard schedules, not true leases.
+## Other Decisions
+
+### Loan Types as Enums
+
+We store loan types (CONSUMER, CAR, MORTGAGE) and schedule types (ANNUITY, EQUAL_PRINCIPAL) as Java enums, not database tables. They're stable for an MVP, and this keeps things simple. If we need dynamic types later, we'll need a migration.
+
+### Testing Approach
+
+We focused on unit tests for the calculation logic. No integration tests or controller tests for now - time was tight for MVP. Each calculator is tested independently, and the service is tested with mocked calculators.
+
+### Docker Setup
+
+Everything runs in Docker Compose for zero-configuration local development. Database, backend, and frontend all start together with health checks. Takes longer to build initially, but everyone gets the same environment.
+
+## Things We Didn't Build
+
+### Balloon Loans
+Would need a new schedule type and calculator. Car loans just use standard schedules for now.
 
 ### Separate First Payment Date
-**Not Implemented:** Initial assumption that start date = first payment date. Discovered limitation late. Would require migration/API changes. **Limitation:** Unrealistic for real-world scenarios with payment delays.
+We assumed start date = first payment date. Real loans often have a delay. Would need schema changes to fix this.
 
-### Created Date in Frontend
-**Not Implemented:** Time constraints, lower priority. **Impact:** No sorting by creation date in frontend.
+### CSV Export
+The export endpoint exists in the API design but isn't implemented. Precision fixes were higher priority.
 
-### CSV Export for Repayment Schedules
-**Not Implemented:** Precision issue became priority, nice-to-have deprioritized. **Impact:** Export endpoint `/api/loans/{id}/schedule/export` not implemented. Can be added post-precision fix.
+## Known Issues
+
+### Interest Rate Precision
+We store interest rates with 2 decimal places (e.g., 5.00%). But EURIBOR-based floating rates need 3 decimal places (e.g., 3.456%). We can't accurately represent those yet. Would need a database migration to `NUMERIC(5, 3)` and validation updates.

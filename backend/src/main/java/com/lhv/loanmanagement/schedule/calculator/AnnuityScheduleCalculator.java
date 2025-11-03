@@ -7,6 +7,7 @@ import com.lhv.loanmanagement.schedule.model.ScheduleItem;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.function.Function;
 
@@ -24,11 +25,12 @@ public class AnnuityScheduleCalculator extends AbstractScheduleCalculator {
     public List<ScheduleItem> calculate(Loan loan) {
         BigDecimal monthlyRate = calculateMonthlyRate(loan.getAnnualInterestRate());
         BigDecimal payment = calculateAnnuityPayment(loan.getAmount(), monthlyRate, loan.getPeriodMonths());
+        BigDecimal constantPayment = payment.setScale(RESULT_SCALE, ROUNDING_MODE);
         
         Function<BigDecimal, MonthlyPaymentCalculation> calculator = 
             balance -> calculateMonthlyPayment(balance, monthlyRate, payment);
         
-        return buildScheduleItems(loan, monthlyRate, calculator);
+        return buildScheduleItems(loan, monthlyRate, calculator, constantPayment);
     }
 
     private BigDecimal calculateAnnuityPayment(BigDecimal principal, BigDecimal monthlyRate, int periodMonths) {
@@ -50,6 +52,26 @@ public class AnnuityScheduleCalculator extends AbstractScheduleCalculator {
         
         return new MonthlyPaymentCalculation(
             balanceBefore, interest, principal, balanceAfter);
+    }
+
+    @Override
+    protected ScheduleItem toScheduleItem(LocalDate paymentDate, MonthlyPaymentCalculation calculation, boolean isLastPayment, BigDecimal constantPayment) {
+        if (constantPayment != null && !isLastPayment) {
+            BigDecimal roundedInterest = calculation.getInterest().setScale(RESULT_SCALE, ROUNDING_MODE);
+            BigDecimal principal = constantPayment.subtract(roundedInterest, MATH_CONTEXT)
+                    .setScale(RESULT_SCALE, ROUNDING_MODE);
+            BigDecimal roundedBalance = calculation.getBalanceAfter().setScale(RESULT_SCALE, ROUNDING_MODE);
+            
+            return ScheduleItem.builder()
+                    .paymentDate(paymentDate)
+                    .payment(constantPayment)
+                    .principal(principal)
+                    .interest(roundedInterest)
+                    .remainingBalance(roundedBalance)
+                    .build();
+        }
+        
+        return super.toScheduleItem(paymentDate, calculation, isLastPayment, constantPayment);
     }
 }
 

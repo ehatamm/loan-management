@@ -1,7 +1,6 @@
 package com.lhv.loanmanagement.schedule.calculator;
 
 import com.lhv.loanmanagement.loan.Loan;
-import com.lhv.loanmanagement.schedule.FinancialCalculationConstants;
 import com.lhv.loanmanagement.schedule.model.MonthlyPaymentCalculation;
 import com.lhv.loanmanagement.schedule.model.ScheduleAccumulator;
 import com.lhv.loanmanagement.schedule.model.ScheduleItem;
@@ -27,29 +26,26 @@ public abstract class AbstractScheduleCalculator implements ScheduleCalculator {
         return balance.multiply(monthlyRate, MATH_CONTEXT);
     }
 
-    protected List<ScheduleItem> buildScheduleItems(Loan loan, BigDecimal monthlyRate, Function<BigDecimal, MonthlyPaymentCalculation> calculator) {
+    protected List<ScheduleItem> buildScheduleItems(Loan loan, BigDecimal monthlyRate, Function<BigDecimal, MonthlyPaymentCalculation> calculator, BigDecimal constantPayment) {
         BigDecimal initialBalance = loan.getAmount().setScale(CALCULATION_SCALE, ROUNDING_MODE);
         BigDecimal loanAmount = loan.getAmount();
         int periodMonths = loan.getPeriodMonths();
         LocalDate startDate = loan.getStartDate();
         
-        List<ScheduleItem> items = Stream.iterate(startDate, date -> date.plusMonths(1))
+        return Stream.iterate(startDate, date -> date.plusMonths(1))
                 .limit(periodMonths)
                 .collect(
                     Collector.of(
                         () -> new ScheduleAccumulator(initialBalance),
                         (acc, paymentDate) -> {
                             boolean isLastPayment = acc.getItems().size() == periodMonths - 1;
-                            MonthlyPaymentCalculation calculation;
-                            
-                            calculation = calculator.apply(acc.getBalance());
+                            MonthlyPaymentCalculation calculation = calculator.apply(acc.getBalance());
                             
                             if (isLastPayment) {
-                                BigDecimal remainingPrincipal = loanAmount.subtract(acc.getAccumulatedPrincipal());
-                                calculation = calculation.withPrincipal(remainingPrincipal, monthlyRate);
+                                calculation = adjustLastPayment(calculation, acc, loanAmount, monthlyRate);
                             }
                             
-                            ScheduleItem item = buildScheduleItem(paymentDate, calculation);
+                            ScheduleItem item = toScheduleItem(paymentDate, calculation, isLastPayment, constantPayment);
                             acc.addItem(item, calculation.getBalanceAfter());
                         },
                         (acc1, acc2) -> {
@@ -58,17 +54,40 @@ public abstract class AbstractScheduleCalculator implements ScheduleCalculator {
                         ScheduleAccumulator::getItems
                     )
                 );
-        
-        return items;
     }
 
-    protected ScheduleItem buildScheduleItem(LocalDate paymentDate, MonthlyPaymentCalculation calculation) {
+    private MonthlyPaymentCalculation adjustLastPayment(
+            MonthlyPaymentCalculation calculation,
+            ScheduleAccumulator accumulator,
+            BigDecimal loanAmount,
+            BigDecimal monthlyRate) {
+        
+        BigDecimal remainingPrincipal = loanAmount.subtract(accumulator.getAccumulatedPrincipal());
+        BigDecimal interest = calculateMonthlyInterest(accumulator.getBalance(), monthlyRate);
+        
+        BigDecimal roundedInterest = interest.setScale(RESULT_SCALE, ROUNDING_MODE);
+        BigDecimal lastPaymentPrincipal = remainingPrincipal.setScale(RESULT_SCALE, ROUNDING_MODE);
+        
+        return new MonthlyPaymentCalculation(
+            accumulator.getBalance(),
+            roundedInterest,
+            lastPaymentPrincipal,
+            BigDecimal.ZERO.setScale(RESULT_SCALE, ROUNDING_MODE)
+        );
+    }
+
+    protected ScheduleItem toScheduleItem(LocalDate paymentDate, MonthlyPaymentCalculation calculation, boolean isLastPayment, BigDecimal constantPayment) {
+        BigDecimal roundedPrincipal = calculation.getPrincipal().setScale(RESULT_SCALE, ROUNDING_MODE);
+        BigDecimal roundedInterest = calculation.getInterest().setScale(RESULT_SCALE, ROUNDING_MODE);
+        BigDecimal payment = roundedPrincipal.add(roundedInterest);
+        BigDecimal roundedBalance = calculation.getBalanceAfter().setScale(RESULT_SCALE, ROUNDING_MODE);
+        
         return ScheduleItem.builder()
                 .paymentDate(paymentDate)
-                .payment(calculation.getPayment().setScale(RESULT_SCALE, ROUNDING_MODE))
-                .principal(calculation.getPrincipal().setScale(RESULT_SCALE, ROUNDING_MODE))
-                .interest(calculation.getInterest().setScale(RESULT_SCALE, ROUNDING_MODE))
-                .remainingBalance(calculation.getBalanceAfter().setScale(RESULT_SCALE, ROUNDING_MODE))
+                .payment(payment)
+                .principal(roundedPrincipal)
+                .interest(roundedInterest)
+                .remainingBalance(roundedBalance)
                 .build();
     }
 }
